@@ -1,4 +1,5 @@
 use std::io::{self, Write};
+use std::path::PathBuf;
 use serde::Serialize;
 
 #[allow(unused_imports)]
@@ -48,8 +49,10 @@ pub enum Resultado {
 	Fundo(Fundo),
 }
 
-pub fn exportar_csv(tipo: &str, codigos: &[String]) {
+pub fn exportar_csv(tipo: &str, codigos: &[String], saida: Option<PathBuf>) {
 	let mut resultados: Vec<Resultado> = vec![];
+	
+	let saida: PathBuf = saida.unwrap_or(PathBuf::from(format!("saida-{}.csv", tipo)));
 	
 	for codigo in codigos {
 		match obter_html(codigo) {
@@ -83,22 +86,20 @@ pub fn exportar_csv(tipo: &str, codigos: &[String]) {
 	}
 
 	// Estabelece os nomes corretos dos arquivos.
-	let file_name = match resultados[0] {
+/* 	let file_name = match resultados[0] {
 		Resultado::Acao(_) => "resultado_acao",
 		Resultado::Fundo(_) => "resultado_fundo",
 	};
-
+ */
 	// Escreve o arquivo .json.
-	if let Err(e) = std::fs::write(
-		&format!("{}.json", file_name),
-		serde_json::to_string_pretty(&resultados).unwrap(),
-	) {
+	if let Err(e) = std::fs::write(&saida, serde_json::to_string_pretty(&resultados).unwrap(), )
+	{
 		eprintln!("Erro ao salvar JSON: {}", e);
 		return;
 	}
 
 	// Escrever CSV
-	let mut wtr = csv::Writer::from_path(format!("{}.csv", file_name)).unwrap();
+	let mut wtr = csv::Writer::from_path(&saida).unwrap();
 	for item in resultados {
 		match item {
 			Resultado::Acao(acao) => {
@@ -142,5 +143,5 @@ pub fn exportar_csv(tipo: &str, codigos: &[String]) {
 	}
 		
 	wtr.flush().unwrap();
-	println!("Exportação finalizada: {}.json + {}.csv", file_name,file_name);
+	println!("Exportação finalizada: {:?}", &saida);
 }

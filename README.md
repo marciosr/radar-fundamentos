@@ -71,6 +71,34 @@ Este modo gera dois arquivos:
 * `resultado.json`: Resultado estruturado
 * `resultado.csv`: Planilha pronta para análise
 
+### Cálculo de Z-score Acumulado
+
+```bash
+./radar-fundamentos zscore <ATIVO_A> <ATIVO_B> --inicio <DATA-YYYY-MM-DD> [--saida caminho.csv]
+```
+
+Exemplo:
+
+```bash
+./radar-fundamentos z-score fras3 rapt4 --inicio 2023-01-01 --saida zscore.csv
+```
+
+Este comando utiliza dados históricos obtidos via Yahoo Finance e calcula o Z-score acumulado entre dois ativos, exportando opcionalmente para um arquivo CSV.
+
+### Comparação Patrimonial entre Holding e Investida
+
+```bash
+./radar-fundamentos compare-holding <HOLDING> <INVESTIDA> --participacao <PORCENTAGEM>
+```
+
+Exemplo:
+
+```bash
+./radar-fundamentos compare-holding rapt4 fras3 --participacao 52
+```
+
+Este comando compara o valor de mercado da holding com sua participação acionária em uma empresa investida. Caso o valor da holding seja inferior à fatia que ela detém da investida, o programa indica uma possível distorção patrimonial.
+
 ### Tipos Aceitos
 
 * `acao`: para empresas listadas com dados fundamentalistas
