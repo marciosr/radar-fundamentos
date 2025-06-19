@@ -17,6 +17,7 @@ clap = { version = "4.5.39", features = ["derive"] }
 yahoo_finance_api = "4.0"
 tokio = { version = "1", features = ["rt-multi-thread", "macros"] }
 time = "0.3.41"
+tokio-test = "0.4.4"
 
 [profile.release]
 opt-level = "z"

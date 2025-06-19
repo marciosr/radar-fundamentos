@@ -1,14 +1,18 @@
-use std::{env, io, path::PathBuf};
 use clap::{Parser, Subcommand, ValueHint};
-use tokio::runtime::Runtime;
+use std::path::PathBuf;
+//use tokio::runtime::Runtime;
 
-use radar_fundamentos::util::{menu, exportar_csv, obter_html};
 use radar_fundamentos::scraper::{busca_acao, busca_fundo};
-use radar_fundamentos::scraper::{zscore, compare::comparar_holdings};
+use radar_fundamentos::scraper::{compare::comparar_holdings, zscore};
+use radar_fundamentos::util::{exportar_csv, obter_html};
 
 /// Radar Fundamentus: coleta e exporta múltiplos fundamentalistas
 #[derive(Parser)]
-#[clap(name = "radar-fundamentus", version = "0.1.0", author = "Seu Nome <seu-email>")]
+#[clap(
+	name = "radar-fundamentus",
+	version = "0.1.0",
+	author = "Seu Nome <seu-email>"
+)]
 struct Cli {
 	#[clap(subcommand)]
 	command: Commands,
@@ -53,18 +57,9 @@ enum Commands {
 		participacao: f64,
 	},
 }
-#[tokio::main]
-async fn main() {
+
+fn main() {
 	let cli = Cli::parse();
-
-	fn comparar_holdings_sync(holding: String, investida: String, participacao: f64) {
-		let rt = tokio::runtime::Runtime::new().unwrap();
-		let resultado = rt.block_on(comparar_holdings(&holding, &investida, participacao));
-		if let Err(e) = resultado {
-			eprintln!("Erro na comparação de holdings: {e}");
-		}
-	}
-
 
 	match cli.command {
 		Commands::Batch { tipo, tickers } => {
@@ -80,19 +75,33 @@ async fn main() {
 			}
 		}
 
-		Commands::Export { tipo, tickers, saida } => {
+		Commands::Export {
+			tipo,
+			tickers,
+			saida,
+		} => {
 			exportar_csv(&tipo, &tickers, saida);
 		}
 
-		Commands::ZScore { ativo_a, ativo_b, inicio, saida } => {
-			if let Err(e) = zscore::busca_zscore(&ativo_a, &ativo_b, inicio.as_deref(), saida.as_deref()).await {
+		Commands::ZScore {
+			ativo_a,
+			ativo_b,
+			inicio,
+			saida,
+		} => {
+			if let Err(e) =
+				zscore::busca_zscore(&ativo_a, &ativo_b, inicio.as_deref(), saida.as_deref())
+			{
 				eprintln!("Erro ao calcular Z-score: {e}");
 			}
 		}
 
-		Commands::CompareHolding { ativo_holding, ativo_investida, participacao } => {
-			comparar_holdings_sync(ativo_holding, ativo_investida, participacao);
+		Commands::CompareHolding {
+			ativo_holding,
+			ativo_investida,
+			participacao,
+		} => {
+			let _ = comparar_holdings(&ativo_holding, &ativo_investida, participacao);
 		}
-
 	}
 }

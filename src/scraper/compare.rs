@@ -1,8 +1,11 @@
-use yahoo_finance_api as yahoo;
 use std::error::Error;
+use tokio_test;
+use yahoo_finance_api as yahoo;
+
+use crate::scraper::busca::obter_numero_acoes;
 
 /// Obtém o valor de mercado de um ativo usando a última cotação e uma estimativa de número de ações.
-pub async fn comparar_holdings(
+pub fn comparar_holdings(
 	holding: &str,
 	investida: &str,
 	participacao_pct: f64,
@@ -13,21 +16,37 @@ pub async fn comparar_holdings(
 	let ticker_holding = format!("{}.SA", holding.to_uppercase());
 	let ticker_investida = format!("{}.SA", investida.to_uppercase());
 
-	let cotacao_holding = conn.get_latest_quotes(&ticker_holding, "1d").await?.last_quote()?.close;
+	let cotacao_holding = tokio_test::block_on(conn.get_latest_quotes(&ticker_holding, "1d"))?;
 
-	let cotacao_investida = conn.get_latest_quotes(&ticker_investida, "1d").await?.last_quote()?.close;
+	let cotacao_investida = tokio_test::block_on(conn.get_latest_quotes(&ticker_investida, "1d"))?;
 
 	// Números de ações podem ser ajustados conforme fonte oficial ou parametrizados
-	let acoes_holding = estimar_numero_acoes(holding)?;
-	let acoes_investida = estimar_numero_acoes(investida)?;
+	let acoes_holding = obter_numero_acoes(holding)
+		.map_err(|e| format!("Erro ao buscar o número de papéis da holding: {}", e))?
+		as f64;
+	let acoes_investida = obter_numero_acoes(investida)
+		.map_err(|e| format!("Erro ao buscar o número de papéis da investida: {}", e))?
+		as f64;
 
-	let valor_mercado_holding = cotacao_holding * acoes_holding;
-	let valor_mercado_investida = cotacao_investida * acoes_investida;
+	let valor_mercado_holding = cotacao_holding.last_quote()?.close * acoes_holding;
+	let valor_mercado_investida = cotacao_investida.last_quote()?.close * acoes_investida;
 	let valor_participacao = valor_mercado_investida * (participacao_pct / 100.0);
 
-	println!("{}: R$ {:.2} bilhões", holding.to_uppercase(), valor_mercado_holding / 1e9);
-	println!("{}: R$ {:.2} bilhões", investida.to_uppercase(), valor_mercado_investida / 1e9);
-	println!("Participação de {:.1}% = R$ {:.2} bilhões", participacao_pct, valor_participacao / 1e9);
+	println!(
+		"{}: R$ {:.2} bilhões",
+		holding.to_uppercase(),
+		valor_mercado_holding / 1e9
+	);
+	println!(
+		"{}: R$ {:.2} bilhões",
+		investida.to_uppercase(),
+		valor_mercado_investida / 1e9
+	);
+	println!(
+		"Participação de {:.1}% = R$ {:.2} bilhões",
+		participacao_pct,
+		valor_participacao / 1e9
+	);
 
 	let diferenca = valor_participacao - valor_mercado_holding;
 	println!("\n→ Diferença: R$ {:.2} bilhões", diferenca / 1e9);
@@ -39,13 +58,4 @@ pub async fn comparar_holdings(
 	}
 
 	Ok(())
-}
-
-/// Estimativa simplificada. Idealmente, isso viria de um arquivo ou fonte oficial.
-fn estimar_numero_acoes(ticker: &str) -> Result<f64, Box<dyn Error>> {
-	match ticker.to_lowercase().as_str() {
-		"rapt4" => Ok(329_330_533.0), // exemplo real
-		"fras3" => Ok(270_016_343.0),
-		_ => Err(format!("Número de ações não conhecido para {}", ticker).into()),
-	}
 }
