@@ -1,80 +1,134 @@
-use yahoo_finance_api as yahoo;
-
+// 1. Importações
 use std::error::Error;
 use std::fs::File;
 use std::io::Write;
 use time::{OffsetDateTime, format_description::well_known::Rfc3339};
-use tokio_test;
-//#[cfg(not(feature = "blocking"))]
+use yahoo_finance_api::{self as yahoo, Quote};
+
+// 2. Função pública original: busca_zscore (mantida como interface legada)
 pub fn busca_zscore(
-    ativo_a: &str,
-    ativo_b: &str,
-    inicio: Option<&str>,
-    saida: Option<&str>,
+	ativo_a: &str,
+	ativo_b: &str,
+	inicio: Option<&str>,
+	saida: Option<&str>,
 ) -> Result<(), Box<dyn Error>> {
-    let ticker_a = format!("{}.SA", ativo_a.to_uppercase());
-    let ticker_b = format!("{}.SA", ativo_b.to_uppercase());
+	// let ticker_a = format!("{}.SA", ativo_a.to_uppercase());
+	// let ticker_b = format!("{}.SA", ativo_b.to_uppercase());
 
-    // Data de início
-    let start = if let Some(data) = inicio {
-        OffsetDateTime::parse(&format!("{data}T00:00:00Z"), &Rfc3339)?
-    } else {
-        OffsetDateTime::UNIX_EPOCH
-    };
-    let end = OffsetDateTime::now_utc();
+	let quotes1 = obter_cotacoes_yahoo(&ativo_a, inicio)?;
+	let quotes2 = obter_cotacoes_yahoo(&ativo_b, inicio)?;
 
-    let conn = yahoo::YahooConnector::new()?;
-    let hist1 = tokio_test::block_on(conn.get_quote_history(&ticker_a, start, end)).unwrap();
-    let hist2 = tokio_test::block_on(conn.get_quote_history(&ticker_b, start, end)).unwrap();
+	let resultado = calcular_zscore_acumulado_com_quotes(&quotes1, &quotes2)?;
 
-    let quotes1 = hist1.quotes().unwrap();
-    let quotes2 = hist2.quotes().unwrap();
+	if let Some(caminho) = saida {
+		salvar_zscore_completo(&resultado, caminho)?;
+		println!("Z-score exportado para: {}", caminho);
+	} else {
+		for linha in &resultado {
+			println!(
+				"{},{:.2},{:.2},{:.2},{:.2},{:.2},{:.2}",
+				linha.data,
+				linha.preco_a,
+				linha.preco_b,
+				linha.spread,
+				linha.media,
+				linha.desvio,
+				linha.zscore
+			);
+		}
+	}
 
-    if quotes1.len() != quotes2.len() {
-        return Err("As séries históricas têm tamanhos diferentes".into());
-    }
+	Ok(())
+}
 
-    let mut spreads = Vec::new();
-    let mut linhas = Vec::new();
+// 3. Nova função genérica para cálculo com preços puros
+#[derive(Debug)]
+pub struct ZscoreRegistro {
+	pub data: String,
+	pub preco_a: f64,
+	pub preco_b: f64,
+	pub spread: f64,
+	pub media: f64,
+	pub desvio: f64,
+	pub zscore: f64,
+}
 
-    for (q1, q2) in quotes1.iter().zip(quotes2.iter()) {
-        let spread = q1.close - q2.close;
-        spreads.push(spread);
+pub fn calcular_zscore_acumulado_com_quotes(
+	quotes1: &[Quote],
+	quotes2: &[Quote],
+) -> Result<Vec<ZscoreRegistro>, Box<dyn Error>> {
+	if quotes1.len() != quotes2.len() {
+		return Err("As séries históricas têm tamanhos diferentes".into());
+	}
 
-        let media = spreads.iter().copied().sum::<f64>() / spreads.len() as f64;
-        let desvio = (spreads.iter().map(|x| (x - media).powi(2)).sum::<f64>()
-            / spreads.len() as f64)
-            .sqrt();
-        let zscore = if desvio != 0.0 {
-            (spread - media) / desvio
-        } else {
-            0.0
-        };
+	let mut resultado = Vec::new();
+	let mut spreads = Vec::new();
 
-        let data = OffsetDateTime::from_unix_timestamp(q1.timestamp)?;
-        linhas.push(format!(
-            "{},{:.2},{:.2},{:.2},{:.2},{:.2},{:.2}",
-            data.date(),
-            q1.close,
-            q2.close,
-            spread,
-            media,
-            desvio,
-            zscore
-        ));
-    }
+	for (q1, q2) in quotes1.iter().zip(quotes2.iter()) {
+		let spread = q1.close - q2.close;
+		spreads.push(spread);
 
-    if let Some(caminho) = saida {
-        let mut arquivo = File::create(caminho)?;
-        writeln!(arquivo, "data,preco_a,preco_b,spread,media,desvio,zscore")?;
-        for linha in linhas {
-            writeln!(arquivo, "{}", linha)?;
-        }
-        println!("Z-score exportado para: {}", caminho);
-    } else {
-        for linha in linhas {
-            println!("{}", linha);
-        }
-    }
-    Ok(())
+		let media = spreads.iter().copied().sum::<f64>() / spreads.len() as f64;
+		let desvio = (spreads.iter().map(|x| (x - media).powi(2)).sum::<f64>()
+			/ spreads.len() as f64)
+			.sqrt();
+		let zscore = if desvio != 0.0 {
+			(spread - media) / desvio
+		} else {
+			0.0
+		};
+
+		let data = OffsetDateTime::from_unix_timestamp(q1.timestamp)?
+			.date()
+			.to_string();
+
+		resultado.push(ZscoreRegistro {
+			data,
+			preco_a: q1.close,
+			preco_b: q2.close,
+			spread,
+			media,
+			desvio,
+			zscore,
+		});
+	}
+
+	Ok(resultado)
+}
+
+// 4. Função auxiliar para salvar resultado completo
+pub fn salvar_zscore_completo(
+	dados: &[ZscoreRegistro],
+	caminho: &str,
+) -> Result<(), Box<dyn Error>> {
+	let mut arquivo = File::create(caminho)?;
+	writeln!(arquivo, "data,preco_a,preco_b,spread,media,desvio,zscore")?;
+	for r in dados {
+		writeln!(
+			arquivo,
+			"{},{:.2},{:.2},{:.2},{:.2},{:.2},{:.2}",
+			r.data, r.preco_a, r.preco_b, r.spread, r.media, r.desvio, r.zscore
+		)?;
+	}
+	Ok(())
+}
+
+// 5. Função para obter cotações do Yahoo (reutilizada pelo zscore-update)
+pub fn obter_cotacoes_yahoo(
+	codigo: &str,
+	data_inicio: Option<&str>,
+) -> Result<Vec<Quote>, Box<dyn Error>> {
+	let codigo = format!("{}.SA", codigo.to_uppercase());
+
+	let inicio = if let Some(data) = data_inicio {
+		OffsetDateTime::parse(&format!("{data}T00:00:00Z"), &Rfc3339)?
+	} else {
+		OffsetDateTime::UNIX_EPOCH
+	};
+
+	let data_fim = OffsetDateTime::now_utc();
+	let conn = yahoo::YahooConnector::new()?;
+	let historico = tokio_test::block_on(conn.get_quote_history(&codigo, inicio, data_fim))?;
+
+	Ok(historico.quotes()?)
 }

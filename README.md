@@ -30,6 +30,16 @@ cargo build --release
 
 O executável será gerado em `target/release/radar-fundamentos`
 
+### Compatibilidade com a compilação cruzada
+
+[dependencies.openssl]
+version = "0.10"
+
+[target.'cfg(target_arch = "arm")'.dependencies.openssl]
+version = "0.10"
+features = ["vendored"]
+
+
 ### Execução Interativa
 
 Se nenhum parâmetro for passado, o programa entra no modo interativo:
@@ -104,6 +114,37 @@ Este comando compara o valor de mercado da holding com sua participação acion�
 * `acao`: para empresas listadas com dados fundamentalistas
 * `fundo`: para fundos imobiliários e fiagros
 * Fiinfras, FIP-IEs e Fidics listados não são suportados
+
+### 🔄 Atualização de Cotações e Cálculo de Z-score Acumulado
+
+```bash
+./radar-fundamentus zscore-update <ATIVO_A> <ATIVO_B> [--saida caminho.csv]
+```
+
+Esse subcomando realiza duas etapas integradas:
+
+1. **Atualiza os dados de cotação** de cada ativo individualmente, salvando em arquivos locais (`dados/cotacoes/<ativo>.csv`)
+2. **Calcula o Z-score acumulado** com base nesses dados históricos, imprimindo o último valor no terminal ou exportando para CSV
+
+#### ✅ Exemplo de uso:
+
+```bash
+./radar-fundamentus z-score-update fras3 rapt4 --saida z.csv
+```
+
+→ Gera um arquivo `z.csv` com a seguinte estrutura:
+
+```csv
+data,preco_a,preco_b,spread,media,desvio,zscore
+2023-01-02,12.34,10.11,2.23,2.23,0.00,0.00
+2023-01-03,12.40,10.10,2.30,2.26,0.05,0.89
+...
+```
+
+#### 💡 Observações:
+- Os arquivos locais com as cotações são mantidos e atualizados incrementalmente.
+- Ideal para uso recorrente com pares definidos de ativos, mantendo o histórico sem redundância.
+
 
 ---
 

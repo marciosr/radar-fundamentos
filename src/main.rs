@@ -1,9 +1,8 @@
 use clap::{Parser, Subcommand, ValueHint};
 use std::path::PathBuf;
-//use tokio::runtime::Runtime;
 
 use radar_fundamentos::scraper::{busca_acao, busca_fundo};
-use radar_fundamentos::scraper::{compare::comparar_holdings, zscore};
+use radar_fundamentos::scraper::{compare::comparar_holdings, zscore, zscore_update};
 use radar_fundamentos::util::{exportar_csv, obter_html};
 
 /// Radar Fundamentus: coleta e exporta múltiplos fundamentalistas
@@ -50,11 +49,22 @@ enum Commands {
 		#[clap(long)]
 		saida: Option<String>,
 	},
+
+	/// Compara valor de mercado de uma holding com sua investida
 	CompareHolding {
 		ativo_holding: String,
 		ativo_investida: String,
 		#[arg(short, long)]
 		participacao: f64,
+	},
+
+	/// Atualiza cotações locais e calcula o Z-score acumulado entre dois ativos
+	ZScoreUpdate {
+		ativo_a: String,
+		ativo_b: String,
+		/// Caminho do arquivo CSV de saída
+		#[clap(long)]
+		saida: Option<String>,
 	},
 }
 
@@ -102,6 +112,18 @@ fn main() {
 			participacao,
 		} => {
 			let _ = comparar_holdings(&ativo_holding, &ativo_investida, participacao);
+		}
+
+		Commands::ZScoreUpdate {
+			ativo_a,
+			ativo_b,
+			saida,
+		} => {
+			if let Err(e) =
+				zscore_update::executar_zscore_update(&ativo_a, &ativo_b, saida.as_deref())
+			{
+				eprintln!("Erro no ZScoreUpdate: {e}");
+			}
 		}
 	}
 }

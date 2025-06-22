@@ -4,7 +4,7 @@ use yahoo_finance_api as yahoo;
 
 use crate::scraper::busca::obter_numero_acoes;
 
-/// Obtém o valor de mercado de um ativo usando a última cotação e uma estimativa de número de ações.
+/// Obtém o valor de mercado de um ativo usando a última cotação e o número de papais.
 pub fn comparar_holdings(
 	holding: &str,
 	investida: &str,
