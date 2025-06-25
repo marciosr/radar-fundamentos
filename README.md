@@ -28,37 +28,38 @@ Este software é fornecido "no estado em que se encontra", sem garantias de qual
 cargo build --release
 ```
 
-O executável será gerado em `target/release/radar-fundamentos`
+O executável será gerado em `target/release/radar-fundamentus`
 
 ### Compatibilidade com a compilação cruzada
 
+```toml
 [dependencies.openssl]
 version = "0.10"
 
 [target.'cfg(target_arch = "arm")'.dependencies.openssl]
 version = "0.10"
 features = ["vendored"]
-
+```
 
 ### Execução Interativa
 
 Se nenhum parâmetro for passado, o programa entra no modo interativo:
 
 ```bash
-./radar-fundamentos
+./radar-fundamentus
 ```
 
 ### Modo Batch (Consulta Rápida)
 
 ```bash
-./radar-fundamentos batch <tipo> <TICKER1> <TICKER2> ...
+./radar-fundamentus batch <tipo> <TICKER1> <TICKER2> ...
 ```
 
 Exemplo:
 
 ```bash
-./radar-fundamentos batch acao petr4 vale3
-./radar-fundamentos batch fundo ggrc11 relg11
+./radar-fundamentus batch acao petr4 vale3
+./radar-fundamentus batch fundo ggrc11 relg11
 ```
 
 A saída será impressa no terminal em formato JSON.
@@ -66,14 +67,14 @@ A saída será impressa no terminal em formato JSON.
 ### Modo Exportação (Gera arquivos)
 
 ```bash
-./radar-fundamentos export <tipo> <TICKER1> <TICKER2> ...
+./radar-fundamentus export <tipo> <TICKER1> <TICKER2> ...
 ```
 
 Exemplo:
 
 ```bash
-./radar-fundamentos export acao klbn11 rani3
-./radar-fundamentos export fundo snlg11 cvbi11
+./radar-fundamentus export acao klbn11 rani3
+./radar-fundamentus export fundo snlg11 cvbi11
 ```
 
 Este modo gera dois arquivos:
@@ -84,13 +85,13 @@ Este modo gera dois arquivos:
 ### Cálculo de Z-score Acumulado
 
 ```bash
-./radar-fundamentos zscore <ATIVO_A> <ATIVO_B> --inicio <DATA-YYYY-MM-DD> [--saida caminho.csv]
+./radar-fundamentus zscore <ATIVO_A> <ATIVO_B> --inicio <DATA-YYYY-MM-DD> [--saida caminho.csv]
 ```
 
 Exemplo:
 
 ```bash
-./radar-fundamentos z-score fras3 rapt4 --inicio 2023-01-01 --saida zscore.csv
+./radar-fundamentus zscore fras3 rapt4 --inicio 2023-01-01 --saida zscore.csv
 ```
 
 Este comando utiliza dados históricos obtidos via Yahoo Finance e calcula o Z-score acumulado entre dois ativos, exportando opcionalmente para um arquivo CSV.
@@ -98,13 +99,13 @@ Este comando utiliza dados históricos obtidos via Yahoo Finance e calcula o Z-s
 ### Comparação Patrimonial entre Holding e Investida
 
 ```bash
-./radar-fundamentos compare-holding <HOLDING> <INVESTIDA> --participacao <PORCENTAGEM>
+./radar-fundamentus compare-holding <HOLDING> <INVESTIDA> --participacao <PORCENTAGEM>
 ```
 
 Exemplo:
 
 ```bash
-./radar-fundamentos compare-holding rapt4 fras3 --participacao 52
+./radar-fundamentus compare-holding rapt4 fras3 --participacao 52
 ```
 
 Este comando compara o valor de mercado da holding com sua participação acionária em uma empresa investida. Caso o valor da holding seja inferior à fatia que ela detém da investida, o programa indica uma possível distorção patrimonial.
@@ -129,7 +130,7 @@ Esse subcomando realiza duas etapas integradas:
 #### ✅ Exemplo de uso:
 
 ```bash
-./radar-fundamentus z-score-update fras3 rapt4 --saida z.csv
+./radar-fundamentus zscore-update fras3 rapt4 --saida z.csv
 ```
 
 → Gera um arquivo `z.csv` com a seguinte estrutura:
@@ -142,9 +143,30 @@ data,preco_a,preco_b,spread,media,desvio,zscore
 ```
 
 #### 💡 Observações:
-- Os arquivos locais com as cotações são mantidos e atualizados incrementalmente.
-- Ideal para uso recorrente com pares definidos de ativos, mantendo o histórico sem redundância.
 
+* Os arquivos locais com as cotações são mantidos e atualizados incrementalmente.
+* Ideal para uso recorrente com pares definidos de ativos, mantendo o histórico sem redundância.
+
+### 📥 Atualização de Cotações com Entrada YAML
+
+```bash
+./radar-fundamentus cotacoes --yaml ativos.yaml --saida cotacoes.csv
+```
+
+Este comando percorre a lista de ativos definida no arquivo YAML e gera um arquivo CSV com as cotações atuais.
+
+#### Exemplo de `ativos.yaml`:
+
+```yaml
+ativos:
+  - PETR4
+  - KLBN11
+  - FRAS3
+```
+
+> ❗ **Importante:** os tickers devem ser informados **sem o sufixo ".SA"**. O programa adiciona esse sufixo automaticamente ao consultar o Yahoo Finance. Assim, use apenas os códigos da B3 como aparecem normalmente (ex: `PETR4`, `WEGE3`, `HGLG11`).
+
+O resultado `cotacoes.csv` poderá ser importado diretamente no LibreOffice ou Excel.
 
 ---
 

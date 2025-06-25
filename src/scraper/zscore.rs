@@ -1,20 +1,16 @@
-// 1. Importações
 use std::error::Error;
 use std::fs::File;
 use std::io::Write;
 use time::{OffsetDateTime, format_description::well_known::Rfc3339};
 use yahoo_finance_api::{self as yahoo, Quote};
 
-// 2. Função pública original: busca_zscore (mantida como interface legada)
+// Função pública: busca_zscore (mantida como interface legada)
 pub fn busca_zscore(
 	ativo_a: &str,
 	ativo_b: &str,
 	inicio: Option<&str>,
 	saida: Option<&str>,
 ) -> Result<(), Box<dyn Error>> {
-	// let ticker_a = format!("{}.SA", ativo_a.to_uppercase());
-	// let ticker_b = format!("{}.SA", ativo_b.to_uppercase());
-
 	let quotes1 = obter_cotacoes_yahoo(&ativo_a, inicio)?;
 	let quotes2 = obter_cotacoes_yahoo(&ativo_b, inicio)?;
 
@@ -41,7 +37,7 @@ pub fn busca_zscore(
 	Ok(())
 }
 
-// 3. Nova função genérica para cálculo com preços puros
+// Estrutura de dados par ao registro de z-score
 #[derive(Debug)]
 pub struct ZscoreRegistro {
 	pub data: String,
@@ -96,7 +92,7 @@ pub fn calcular_zscore_acumulado_com_quotes(
 	Ok(resultado)
 }
 
-// 4. Função auxiliar para salvar resultado completo
+// Salvar resultado completo
 pub fn salvar_zscore_completo(
 	dados: &[ZscoreRegistro],
 	caminho: &str,
@@ -113,7 +109,7 @@ pub fn salvar_zscore_completo(
 	Ok(())
 }
 
-// 5. Função para obter cotações do Yahoo (reutilizada pelo zscore-update)
+// Função para obter cotações do Yahoo (reutilizada pelo zscore-update)
 pub fn obter_cotacoes_yahoo(
 	codigo: &str,
 	data_inicio: Option<&str>,
