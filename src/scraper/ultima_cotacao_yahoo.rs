@@ -49,18 +49,25 @@ pub fn carregar_ativos_yaml(caminho: &str) -> Result<Vec<String>, Box<dyn std::e
 /// Recomendado executar periodicamente via `radar-runner` ou agendador de sua escolha.
 ///
 pub fn atualizar_cotacoes_csv(lista: &[String], caminho: &str) -> std::io::Result<()> {
-    let mut wtr = Writer::from_path(caminho)?;
     let hoje = Local::now().format("%Y-%m-%d").to_string();
 
-    wtr.write_record(&["ativo", "data", "cotacao"])?;
+    let mut linhas = vec![];
 
     for ativo in lista {
-        if let Some(preco) = ultima_cotacao(&format!("{}.SA", ativo.to_string().to_uppercase())) {
-            wtr.write_record(&[ativo.to_string(), hoje.clone(), preco.to_string()])?;
+        if let Some(preco) = ultima_cotacao(&format!("{}.SA", ativo.to_uppercase())) {
+            linhas.push(vec![ativo.to_string(), hoje.clone(), preco.to_string()]);
         }
     }
-    // format!("{}.SA", codigo.to_uppercase());
-    wtr.flush()?;
+
+    if !linhas.is_empty() {
+        let mut wtr = Writer::from_path(caminho)?;
+        wtr.write_record(&["ativo", "data", "cotacao"])?;
+        for linha in linhas {
+            wtr.write_record(&linha)?;
+        }
+        wtr.flush()?;
+    }
+
     Ok(())
 }
 
@@ -76,10 +83,10 @@ fn ultima_cotacao(ativo: &str) -> Option<f64> {
 // Exemplo de uso:
 //
 // fn main() {
-//     let ativos = carregar_ativos_yaml("ativos.yaml").unwrap();
-//     let caminho = "cotacoes.csv";
-//     match atualizar_cotacoes_csv(&ativos, caminho) {
-//         Ok(_) => println!("Arquivo atualizado com sucesso!"),
-//         Err(e) => eprintln!("Erro ao atualizar cotacoes: {}", e),
-//     }
+//	 let ativos = carregar_ativos_yaml("ativos.yaml").unwrap();
+//	 let caminho = "cotacoes.csv";
+//	 match atualizar_cotacoes_csv(&ativos, caminho) {
+//		 Ok(_) => println!("Arquivo atualizado com sucesso!"),
+//		 Err(e) => eprintln!("Erro ao atualizar cotacoes: {}", e),
+//	 }
 // }
