@@ -224,45 +224,6 @@ ativos:
 
 O resultado `cotacoes.csv` poderá ser importado diretamente no LibreOffice ou Excel.
 
-
-
-📊 Exportação de Indicadores Fundamentalistas via YAML
-
-```
-./radar-fundamentos indicadores <tipo> --yaml arquivo.yaml [--saida arquivo.csv]
-```
-Este subcomando permite exportar indicadores completos para múltiplos ativos listados em um arquivo YAML, organizando os dados em formato CSV para análise offline. É especialmente útil para fundos imobiliários ou grupos de ações que você queira monitorar periodicamente.
-Exemplo de uso:
-
-```
-./radar-fundamentos indicadores fundo --yaml fundos.yaml --saida fundos.csv
-```
-
-Exemplo de fundos.yaml:
-
-```
-ativos:
-  - RELG11
-  - SNEL11
-  - RZTR11
-  - GGRC11
-```
-
-O CSV gerado conterá colunas como:
-- ticker
-- cotação
-- mínima/máxima 52 semanas
-- P/VP
-- patrimônio líquido
-- número de cotas
-- segmento
-- mandato
-- rendimento acumulado em 12 meses
-- entre outros indicadores obtidos do site Fundamentus
-
-> ✅ Dica: ideal para gerar relatórios periódicos de acompanhamento de FIIs ou grupos de ações, de forma simples e reprodutível.
-
-
 ---
 
 Para sugestões ou melhorias, fique à vontade para abrir uma *issue* ou *pull request*.
