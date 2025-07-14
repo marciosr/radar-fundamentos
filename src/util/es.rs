@@ -1,15 +1,17 @@
+use serde::Serialize;
 use std::io::{self, Write};
 use std::path::PathBuf;
-use serde::Serialize;
 
 #[allow(unused_imports)]
-use crate::modelo::{Acao, Fundo, Ativo, DadosAcao, DadosFundo, LinhaCSV, LinhaCSVFundo};
+use crate::modelo::{Acao, Ativo, DadosAcao, DadosFundo, Fundo, LinhaCSV, LinhaCSVFundo};
 use crate::scraper::atributo::Scraper;
 use crate::scraper::{busca_acao, busca_fundo};
 use crate::util::obter_html;
 
 pub fn menu() {
-	println!("Busca de ativos no Fundamentus. \n Informe o tipo de ativo desejado: \n 1 - Ação\n 2 - Fundo");
+	println!(
+		"Busca de ativos no Fundamentus. \n Informe o tipo de ativo desejado: \n 1 - Ação\n 2 - Fundo"
+	);
 	io::stdout().flush().unwrap(); // força flush para printar antes da leitura
 
 	let mut tipo = String::new();
@@ -41,7 +43,7 @@ pub fn menu() {
 			eprintln!("Erro ao obter HTML para {}: {}", codigo, e);
 		}
 	};
-}	
+}
 
 #[derive(Debug, Serialize)]
 pub enum Resultado {
@@ -51,33 +53,31 @@ pub enum Resultado {
 
 pub fn exportar_csv(tipo: &str, codigos: &[String], saida: Option<PathBuf>) {
 	let mut resultados: Vec<Resultado> = vec![];
-	
+
 	let saida: PathBuf = saida.unwrap_or(PathBuf::from(format!("saida-{}.csv", tipo)));
-	
+
 	for codigo in codigos {
 		match obter_html(codigo) {
-			Ok(html) => {
-				match tipo {
-					"acao" => {
-						let mut scraper = Acao::default();
-						scraper.ativo.ticker = codigo.clone();
+			Ok(html) => match tipo {
+				"acao" => {
+					let mut scraper = Acao::default();
+					scraper.ativo.ticker = codigo.clone();
 
-						let resultado = scraper.extrair_dados(&html);
-						resultados.push(Resultado::Acao(resultado));
-					}
-					"fundo" => { 
-						let mut scraper = Fundo::default();
-						scraper.ativo.ticker = codigo.clone();
-
-						let resultado = scraper.extrair_dados(&html);
-						resultados.push(Resultado::Fundo(resultado));
-					}
-					_ => {
-						eprintln!("Outros tipos de ativos não implementados'{}'", tipo);
-						return;
-					}
+					let resultado = scraper.extrair_dados(&html);
+					resultados.push(Resultado::Acao(resultado));
 				}
-			}
+				"fundo" => {
+					let mut scraper = Fundo::default();
+					scraper.ativo.ticker = codigo.clone();
+
+					let resultado = scraper.extrair_dados(&html);
+					resultados.push(Resultado::Fundo(resultado));
+				}
+				_ => {
+					eprintln!("Outros tipos de ativos não implementados'{}'", tipo);
+					return;
+				}
+			},
 			Err(e) => {
 				eprintln!("Erro ao obter HTML para {}: {}", codigo, e);
 				continue;
@@ -86,14 +86,13 @@ pub fn exportar_csv(tipo: &str, codigos: &[String], saida: Option<PathBuf>) {
 	}
 
 	// Estabelece os nomes corretos dos arquivos.
-/* 	let file_name = match resultados[0] {
-		Resultado::Acao(_) => "resultado_acao",
-		Resultado::Fundo(_) => "resultado_fundo",
-	};
- */
+	/* 	let file_name = match resultados[0] {
+		   Resultado::Acao(_) => "resultado_acao",
+		   Resultado::Fundo(_) => "resultado_fundo",
+	   };
+	*/
 	// Escreve o arquivo .json.
-	if let Err(e) = std::fs::write(&saida, serde_json::to_string_pretty(&resultados).unwrap(), )
-	{
+	if let Err(e) = std::fs::write(&saida, serde_json::to_string_pretty(&resultados).unwrap()) {
 		eprintln!("Erro ao salvar JSON: {}", e);
 		return;
 	}
@@ -135,13 +134,13 @@ pub fn exportar_csv(tipo: &str, codigos: &[String], saida: Option<PathBuf>) {
 					mandato: fundo.dados.mandato,
 					rendimento_12m: fundo.dados.rendimento_12m,
 					liquidez_diaria: fundo.dados.liquidez_diaria,
+					rendimento_03m: fundo.dados.rendimento_03m,
 				};
 				wtr.serialize(linha).unwrap();
 			}
-
 		}
 	}
-		
+
 	wtr.flush().unwrap();
 	println!("Exportação finalizada: {:?}", &saida);
 }

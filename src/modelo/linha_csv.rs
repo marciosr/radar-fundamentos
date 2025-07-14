@@ -30,4 +30,5 @@ pub struct LinhaCSVFundo {
 	pub mandato: Option<String>,
 	pub rendimento_12m: Option<f32>,
 	pub liquidez_diaria: Option<f64>,
+	pub rendimento_03m: Option<f32>,
 }
