@@ -1,12 +1,72 @@
+use anyhow::{Context, Result, bail};
 use serde::Serialize;
 use std::io::{self, Write};
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
+use tempfile::NamedTempFile;
 
 #[allow(unused_imports)]
 use crate::modelo::{Acao, Ativo, DadosAcao, DadosFundo, Fundo, LinhaCSV, LinhaCSVFundo};
 use crate::scraper::atributo::Scraper;
 use crate::scraper::{busca_acao, busca_fundo};
 use crate::util::obter_html;
+
+pub struct CsvOptions<'a> {
+	pub header: Option<&'a [&'a str]>,
+	pub delimiter: Option<u8>,
+	pub fail_if_empty: bool,
+}
+
+impl<'a> Default for CsvOptions<'a> {
+	fn default() -> Self {
+		Self {
+			header: None,
+			delimiter: None,
+			fail_if_empty: true,
+		}
+	}
+}
+
+pub fn export_csv_atomico<T, I>(saida: &Path, rows: I, opts: CsvOptions) -> Result<()>
+where
+	T: serde::Serialize,
+	I: IntoIterator<Item = T>,
+{
+	use std::fs;
+
+	// Materializa para contar e permitir duas passadas se necessário
+	let rows: Vec<T> = rows.into_iter().collect();
+	if opts.fail_if_empty && rows.is_empty() {
+		bail!("vetor de dados vazio; nada a exportar");
+	}
+
+	if let Some(dir) = saida.parent() {
+		fs::create_dir_all(dir).with_context(|| format!("criando diretório {}", dir.display()))?;
+	}
+
+	let parent = saida.parent().unwrap_or_else(|| Path::new("."));
+	let mut tmp = NamedTempFile::new_in(parent).context("criando arquivo temporário")?;
+
+	{
+		let mut wtr = csv::WriterBuilder::new()
+			.delimiter(opts.delimiter.unwrap_or(b','))
+			.from_writer(tmp.as_file_mut());
+
+		if let Some(h) = opts.header {
+			//use csv::Writer; // habilita write_record
+			wtr.write_record(h).context("escrevendo cabeçalho")?;
+		}
+
+		for row in rows {
+			wtr.serialize(row).context("serializando linha")?;
+		}
+		wtr.flush().context("flush no writer")?;
+	}
+
+	tmp.as_file().sync_all().context("fsync do temporário")?;
+	tmp.persist(saida)
+		.with_context(|| format!("persistindo {}", saida.display()))?;
+	Ok(())
+}
 
 pub fn menu() {
 	println!(
@@ -51,10 +111,8 @@ pub enum Resultado {
 	Fundo(Fundo),
 }
 
-pub fn exportar_csv(tipo: &str, codigos: &[String], saida: Option<PathBuf>) {
+pub fn exportar_csv(tipo: &str, codigos: &[String], saida: Option<PathBuf>) -> Result<()> {
 	let mut resultados: Vec<Resultado> = vec![];
-
-	let saida: PathBuf = saida.unwrap_or(PathBuf::from(format!("saida-{}.csv", tipo)));
 
 	for codigo in codigos {
 		match obter_html(codigo) {
@@ -75,7 +133,7 @@ pub fn exportar_csv(tipo: &str, codigos: &[String], saida: Option<PathBuf>) {
 				}
 				_ => {
 					eprintln!("Outros tipos de ativos não implementados'{}'", tipo);
-					return;
+					return Ok(());
 				}
 			},
 			Err(e) => {
@@ -85,62 +143,61 @@ pub fn exportar_csv(tipo: &str, codigos: &[String], saida: Option<PathBuf>) {
 		}
 	}
 
-	// Estabelece os nomes corretos dos arquivos.
-	/* 	let file_name = match resultados[0] {
-		   Resultado::Acao(_) => "resultado_acao",
-		   Resultado::Fundo(_) => "resultado_fundo",
-	   };
-	*/
-	// Escreve o arquivo .json.
-	if let Err(e) = std::fs::write(&saida, serde_json::to_string_pretty(&resultados).unwrap()) {
-		eprintln!("Erro ao salvar JSON: {}", e);
-		return;
-	}
-
-	// Escrever CSV
-	let mut wtr = csv::Writer::from_path(&saida).unwrap();
-	for item in resultados {
-		match item {
-			Resultado::Acao(acao) => {
-				let linha = LinhaCSV {
-					ticker: acao.ativo.ticker,
-					cotacao: acao.ativo.cotacao,
-					min_52_sem: acao.ativo.min_52_sem,
-					max_52_sem: acao.ativo.max_52_sem,
-					p_vp: acao.ativo.p_vp,
-					patrimonio_liquido: acao.ativo.patrimonio_liquido,
-					num_acoes: acao.dados.num_acoes,
-					preco_lucro: acao.dados.preco_lucro,
-					lucro_por_acao: acao.dados.lucro_por_acao,
-					marg_bruta: acao.dados.marg_bruta,
-					marg_ebitda: acao.dados.marg_ebitda,
-					roe: acao.dados.roe,
-					roic: acao.dados.roic,
-					divida_liquida: acao.dados.divida_liquida,
-					liquidez_diaria: acao.dados.liquidez_diaria,
-				};
-				wtr.serialize(linha).unwrap();
-			}
-			Resultado::Fundo(fundo) => {
-				let linha = LinhaCSVFundo {
-					ticker: fundo.ativo.ticker,
-					cotacao: fundo.ativo.cotacao,
-					min_52_sem: fundo.ativo.min_52_sem,
-					max_52_sem: fundo.ativo.max_52_sem,
-					p_vp: fundo.ativo.p_vp,
-					patrimonio_liquido: fundo.ativo.patrimonio_liquido,
-					num_cotas: fundo.dados.num_cotas,
-					segmento: fundo.dados.segmento,
-					mandato: fundo.dados.mandato,
-					rendimento_12m: fundo.dados.rendimento_12m,
-					liquidez_diaria: fundo.dados.liquidez_diaria,
-					rendimento_03m: fundo.dados.rendimento_03m,
-				};
-				wtr.serialize(linha).unwrap();
-			}
+	match tipo {
+		"acao" => {
+			export_csv_atomico(
+				&saida.unwrap(),
+				resultados,
+				CsvOptions {
+					header: Some(&[
+						"ticker",
+						"cotacao",
+						"min_52_sem",
+						"max_52_sem",
+						"p_vp",
+						"patrimonio_liquido",
+						"num_acoes",
+						"preco_lucro",
+						"lucro_por_acao",
+						"marg_bruta",
+						"marg_ebitda",
+						"roe",
+						"roic",
+						"divida_liquida",
+						"liquidez_diaria",
+					]),
+					..Default::default()
+				},
+			)?;
+		}
+		"fundo" => {
+			export_csv_atomico(
+				&saida.unwrap(),
+				resultados,
+				CsvOptions {
+					header: Some(&[
+						"ticker",
+						"cotacao",
+						"min_52_sem",
+						"max_52_sem",
+						"p_vp",
+						"patrimonio_liquido",
+						"num_cotas",
+						"segmento",
+						"mandato",
+						"rendimento_12m",
+						"liquidez_diaria",
+						"rendimento_03m",
+					]),
+					..Default::default()
+				},
+			)?;
+		}
+		_ => {
+			eprintln!("Outros tipos de ativos não implementados'{}'", tipo);
+			return Ok(());
 		}
 	}
 
-	wtr.flush().unwrap();
-	println!("Exportação finalizada: {:?}", &saida);
+	Ok(())
 }

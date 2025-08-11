@@ -12,7 +12,7 @@ use crate::scraper::{
 };
 use yahoo_finance_api::Quote;
 
-const DIR_COTACOES: &str = "dados/cotacoes/";
+const DIR_COTACOES: &str = "Documentos/Investimentos/dados/cotacoes";
 const DATA_MINIMA_PADRAO: &str = "2014-01-01";
 
 #[derive(Debug, Deserialize, Serialize, Clone)]

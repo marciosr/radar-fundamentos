@@ -91,7 +91,7 @@ enum Commands {
 	},
 }
 
-fn main() {
+fn main() -> Result<(), Box<dyn std::error::Error>> {
 	let cli = Cli::parse();
 
 	match cli.command {
@@ -112,7 +112,7 @@ fn main() {
 			tickers,
 			saida,
 		} => {
-			exportar_csv(&tipo, &tickers, saida);
+			exportar_csv(&tipo, &tickers, saida)?;
 		}
 		Commands::ZScore {
 			ativo_a,
@@ -152,8 +152,9 @@ fn main() {
 			Err(e) => eprintln!("Erro ao carregar ativos do YAML: {}", e),
 		},
 		Commands::Indicadores { yaml, saida, tipo } => match carregar_ativos_yaml(&yaml) {
-			Ok(ativos) => exportar_csv(&tipo, &ativos, saida),
+			Ok(ativos) => exportar_csv(&tipo, &ativos, saida)?,
 			Err(e) => eprintln!("Erro ao carregar ativos do YAML: {}", e),
 		},
 	}
+	Ok(())
 }

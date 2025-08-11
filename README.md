@@ -83,9 +83,8 @@ Exemplo:
 ./radar-fundamentos export fundo snlg11 cvbi11
 ```
 
-Este modo gera dois arquivos:
+Este modo gera o arquivo:
 
-* `resultado.json`: Resultado estruturado
 * `resultado.csv`: Planilha pronta para análise
 
 ---
