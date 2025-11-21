@@ -26,7 +26,7 @@ Este software é fornecido "no estado em que se encontra", sem garantias de qual
 
 ```bash
 cargo build --release
-```
+````
 
 O executável será gerado em `target/release/radar-fundamentos`.
 
@@ -41,15 +41,7 @@ version = "0.10"
 features = ["vendored"]
 ```
 
-### Execução Interativa
-
-Se nenhum parâmetro for passado, o programa entra no modo interativo:
-
-```bash
-./radar-fundamentos
-```
-
----
+-----
 
 ## Comandos Disponíveis
 
@@ -58,6 +50,8 @@ Se nenhum parâmetro for passado, o programa entra no modo interativo:
 ```bash
 ./radar-fundamentos batch <tipo> <TICKER1> <TICKER2> ...
 ```
+
+**Descrição:** Processa uma lista de *tickers* e imprime o resultado da análise fundamentalista (Ação ou Fundo) no formato JSON na saída padrão (terminal).
 
 Exemplo:
 
@@ -68,26 +62,26 @@ Exemplo:
 
 A saída será impressa no terminal em formato JSON.
 
----
+-----
 
-### Modo Exportação (Gera arquivos)
+### Modo Exportação (Gera arquivos CSV de Indicadores)
 
 ```bash
-./radar-fundamentos export <tipo> <TICKER1> <TICKER2> ...
+./radar-fundamentos export <tipo> <TICKER1> <TICKER2> ... [--saida <caminho.csv>]
 ```
+
+**Descrição:** Coleta os indicadores fundamentalistas para os *tickers* fornecidos e exporta os dados para um arquivo CSV.
 
 Exemplo:
 
 ```bash
-./radar-fundamentos export acao klbn11 rani3
+./radar-fundamentos export acao klbn11 rani3 --saida acoes.csv
 ./radar-fundamentos export fundo snlg11 cvbi11
 ```
 
-Este modo gera o arquivo:
+Se a *flag* `--saida` for omitida, o arquivo de saída padrão será `resultado.csv`.
 
-* `resultado.csv`: Planilha pronta para análise
-
----
+-----
 
 ### 📊 Exportação de Indicadores Fundamentalistas via YAML
 
@@ -95,7 +89,7 @@ Este modo gera o arquivo:
 ./radar-fundamentos indicadores <tipo> --yaml arquivo.yaml [--saida arquivo.csv]
 ```
 
-Este subcomando permite exportar **indicadores completos** para múltiplos ativos listados em um arquivo YAML, organizando os dados em formato CSV para análise offline. É especialmente útil para fundos imobiliários ou grupos de ações que você queira monitorar periodicamente.
+**Descrição:** Este subcomando permite exportar **indicadores completos** para múltiplos ativos listados em um arquivo YAML, organizando os dados em formato CSV para análise offline.
 
 #### Exemplo de uso:
 
@@ -113,28 +107,37 @@ ativos:
   - GGRC11
 ```
 
-O CSV gerado conterá colunas como:
-
-* ticker
-* cotação
-* mínima/máxima 52 semanas
-* P/VP
-* patrimônio líquido
-* número de cotas
-* segmento
-* mandato
-* rendimento acumulado em 12 meses
-* entre outros indicadores obtidos do site Fundamentus
+O CSV gerado conterá diversas colunas de indicadores obtidos do site Fundamentus.
 
 > ✅ **Dica**: ideal para gerar relatórios periódicos de acompanhamento de FIIs ou grupos de ações, de forma simples e reprodutível.
 
----
+-----
 
-### Cálculo de Z-score Acumulado
+### 💵 Atualização de Cotações (Alta Frequência)
+
+```bash
+./radar-fundamentos cotacoes <TICKER1> <TICKER2> ... --saida <caminho.csv>
+```
+
+**Descrição:** Coleta as últimas cotações (via Yahoo Finance) para todos os *tickers* fornecidos e **atualiza/sobrescreve** um único arquivo CSV de saída. Ideal para uso com o `radar-runner` em um ciclo de alta frequência.
+
+> ❗ **Importante:** A *flag* `--saida` é **obrigatória**.
+
+#### Exemplo de uso:
+
+```bash
+./radar-fundamentos cotacoes VALE3 PETR4 VGIR11 --saida cotacoes_atuais.csv
+```
+
+-----
+
+### Cálculo de Z-score Histórico
 
 ```bash
 ./radar-fundamentos zscore <ATIVO_A> <ATIVO_B> --inicio <DATA-YYYY-MM-DD> [--saida caminho.csv]
 ```
+
+**Descrição:** Utiliza dados históricos (via Yahoo Finance) a partir de uma data de início e calcula o Z-score acumulado do *spread* entre os dois ativos, exportando opcionalmente para um arquivo CSV.
 
 Exemplo:
 
@@ -142,44 +145,18 @@ Exemplo:
 ./radar-fundamentos zscore fras3 rapt4 --inicio 2023-01-01 --saida zscore.csv
 ```
 
-Este comando utiliza dados históricos obtidos via Yahoo Finance e calcula o Z-score acumulado entre dois ativos, exportando opcionalmente para um arquivo CSV.
+-----
 
----
-
-### Comparação Patrimonial entre Holding e Investida
-
-```bash
-./radar-fundamentos compare-holding <HOLDING> <INVESTIDA> --participacao <PORCENTAGEM>
-```
-
-Exemplo:
-
-```bash
-./radar-fundamentos compare-holding rapt4 fras3 --participacao 52
-```
-
-Este comando compara o valor de mercado da holding com sua participação acionária em uma empresa investida. Caso o valor da holding seja inferior à fatia que ela detém da investida, o programa indica uma possível distorção patrimonial.
-
----
-
-### Tipos Aceitos
-
-* `acao`: para empresas listadas com dados fundamentalistas
-* `fundo`: para fundos imobiliários e fiagros
-* Fiinfras, FIP-IEs e Fidics listados não são suportados
-
----
-
-### 🔄 Atualização de Cotações e Cálculo de Z-score Acumulado
+### 🔄 Atualização de Cotações e Cálculo de Z-score (Incremental)
 
 ```bash
 ./radar-fundamentos zscore-update <ATIVO_A> <ATIVO_B> [--saida caminho.csv]
 ```
 
-Esse subcomando realiza duas etapas integradas:
+**Descrição:** Realiza duas etapas:
 
-1. **Atualiza os dados de cotação** de cada ativo individualmente, salvando em arquivos locais (`dados/cotacoes/<ativo>.csv`)
-2. **Calcula o Z-score acumulado** com base nesses dados históricos, imprimindo o último valor no terminal ou exportando para CSV
+1.  Atualiza os dados de cotação de cada ativo incrementalmente (mantendo arquivos locais).
+2.  Calcula o Z-score acumulado com base nesse histórico atualizado.
 
 #### ✅ Exemplo de uso:
 
@@ -187,42 +164,40 @@ Esse subcomando realiza duas etapas integradas:
 ./radar-fundamentos zscore-update fras3 rapt4 --saida z.csv
 ```
 
-→ Gera um arquivo `z.csv` com a seguinte estrutura:
+-----
 
-```csv
-data,preco_a,preco_b,spread,media,desvio,zscore
-2023-01-02,12.34,10.11,2.23,2.23,0.00,0.00
-2023-01-03,12.40,10.10,2.30,2.26,0.05,0.89
-```
-
-💡 **Observações:**
-
-* Os arquivos locais com as cotações são mantidos e atualizados incrementalmente.
-* Ideal para uso recorrente com pares definidos de ativos, mantendo o histórico sem redundância.
-
----
-
-### 📥 Atualização de Cotações com Entrada YAML
+### Comparação Patrimonial entre Holding e Investida
 
 ```bash
-./radar-fundamentos cotacoes --yaml ativos.yaml --saida cotacoes.csv
+./radar-fundamentos compare-holding <HOLDING> <INVESTIDA> --participacao <PORCENTAGEM>
 ```
 
-Este comando percorre a lista de ativos definida no arquivo YAML e gera um arquivo CSV com as cotações atuais.
+**Descrição:** Compara o valor de mercado da holding com o valor de sua participação acionária na empresa investida, indicando possíveis distorções.
 
-#### Exemplo de `ativos.yaml`:
+Exemplo:
 
-```yaml
-ativos:
-  - PETR4
-  - KLBN11
-  - FRAS3
+```bash
+./radar-fundamentos compare-holding rapt4 fras3 --participacao 52
 ```
 
-> ❗ **Importante:** os tickers devem ser informados **sem o sufixo ".SA"**. O programa adiciona esse sufixo automaticamente ao consultar o Yahoo Finance. Assim, use apenas os códigos da B3 como aparecem normalmente (ex: `PETR4`, `WEGE3`, `HGLG11`).
+-----
 
-O resultado `cotacoes.csv` poderá ser importado diretamente no LibreOffice ou Excel.
+### Tipos Aceitos
 
----
+  * `acao`: para empresas listadas com dados fundamentalistas
+  * `fundo`: para fundos imobiliários e fiagros
+  * Fiinfras, FIP-IEs e Fidics listados não são suportados
+
+-----
 
 Para sugestões ou melhorias, fique à vontade para abrir uma *issue* ou *pull request*.
+
+```
+
+As principais alterações foram:
+1.  Remoção da seção **"Execução Interativa"**.
+2.  Ajuste do comando **`Cotacoes`** para aceitar `tickers` como lista e tornar `--saida` obrigatório, conforme o código.
+3.  Revisão das descrições para refletir os 7 subcomandos ativos.
+
+Se precisar de qualquer refinamento nas descrições, por favor, me avise!
+```
