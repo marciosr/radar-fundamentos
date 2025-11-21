@@ -68,16 +68,17 @@ enum Commands {
 		#[clap(long)]
 		saida: Option<String>,
 	},
-	/// Atualiza o CSV com as últimas cotações a partir de um arquivo YAML
+
+	/// Atualiza o CSV com as últimas cotações a partir de uma lista de ativos
 	Cotacoes {
-		/// Caminho para o arquivo YAML contendo os ativos
-		#[arg(long)]
-		yaml: String,
+		/// Lista de tickers cujas cotações devem ser atualizadas
+		tickers: Vec<String>,
 
 		/// Caminho de saída do arquivo CSV
 		#[arg(long)]
 		saida: String,
 	},
+
 	Indicadores {
 		/// Tipo do ativo (fundo ou acao)
 		tipo: String,
@@ -144,12 +145,9 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 				eprintln!("Erro no ZScoreUpdate: {e}");
 			}
 		}
-		Commands::Cotacoes { yaml, saida } => match carregar_ativos_yaml(&yaml) {
-			Ok(ativos) => match atualizar_cotacoes_csv(&ativos, &saida) {
-				Ok(_) => println!("Arquivo de cotações atualizado com sucesso."),
-				Err(e) => eprintln!("Erro ao salvar CSV: {}", e),
-			},
-			Err(e) => eprintln!("Erro ao carregar ativos do YAML: {}", e),
+		Commands::Cotacoes { tickers, saida } => match atualizar_cotacoes_csv(&tickers, &saida) {
+			Ok(_) => println!("Arquivo de cotações atualizado com sucesso."),
+			Err(e) => eprintln!("Erro ao salvar CSV: {}", e),
 		},
 		Commands::Indicadores { yaml, saida, tipo } => match carregar_ativos_yaml(&yaml) {
 			Ok(ativos) => exportar_csv(&tipo, &ativos, saida)?,

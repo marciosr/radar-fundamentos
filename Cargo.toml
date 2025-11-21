@@ -1,6 +1,6 @@
 [package]
 name = "radar-fundamentos"
-version = "0.2.0"
+version = "0.3.0"
 edition = "2024"
 license = "MIT"
 authors = ["Seu Nome <seu@email.com>"]
@@ -8,21 +8,21 @@ authors = ["Seu Nome <seu@email.com>"]
 
 [dependencies]
 csv = "1"
-reqwest = { version = "0.11", features = ["blocking", "rustls-tls"] }
+reqwest = { version = "0.12", features = ["blocking", "rustls-tls"] }
 regex = "1"
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
-clap = { version = "4.5.39", features = ["derive"] }
+clap = { version = "4.5", features = ["derive"] }
 #yahoo_finance_api = {version = "4.0", features = ["blocking"]}
 yahoo_finance_api = "4.0"
 tokio = { version = "1", features = ["rt-multi-thread", "macros"] }
-time = "0.3.41"
-tokio-test = "0.4.4"
+time = "0.3"
+tokio-test = "0.4"
 chrono = { version = "0.4", features = ["serde"] }
-serde_yaml = "0.9.34"
-scraper = "0.23.1"
-anyhow = "1.0.98"
-tempfile = "3.20.0"
+serde_yml = "0.0.12"
+scraper = "0.24"
+anyhow = "1.0"
+tempfile = "3"
 
 [profile.release]
 opt-level = "z"
