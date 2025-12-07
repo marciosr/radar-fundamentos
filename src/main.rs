@@ -2,7 +2,7 @@ use clap::{Parser, Subcommand, ValueHint};
 use std::path::PathBuf;
 
 use radar_fundamentos::scraper::{
-	atualizar_cotacoes_csv, carregar_ativos_yaml, compare::comparar_holdings, zscore, zscore_update,
+	atualizar_cotacoes_csv, compare::comparar_holdings, zscore, zscore_update,
 };
 use radar_fundamentos::scraper::{busca_acao, busca_fundo};
 use radar_fundamentos::util::{exportar_csv, obter_html};
@@ -12,7 +12,7 @@ use radar_fundamentos::util::{exportar_csv, obter_html};
 #[clap(
 	name = "radar-fundamentos",
 	version = "0.1.0",
-	author = "Seu Nome <seu-email>"
+	author = "Márcio <marciosr10 at gmail.com>"
 )]
 struct Cli {
 	#[clap(subcommand)]
@@ -80,11 +80,11 @@ enum Commands {
 	},
 
 	Indicadores {
-		/// Tipo do ativo (fundo ou acao)
+		/// Tipo do ativo (fundos ou acoes)
 		tipo: String,
-		/// Caminho para o arquivo YAML contenndo os ativos
-		#[arg(long)]
-		yaml: String,
+		/// Lista de tickers cujas cotações devem ser atualizadas
+		tickers: Vec<String>,
+
 		#[arg(long)]
 		/// Caminho de saida do arquivo CSV
 		#[clap(short, long, value_hint = ValueHint::FilePath)]
@@ -100,8 +100,8 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 			for codigo in &tickers {
 				match obter_html(codigo) {
 					Ok(html) => match tipo.as_str() {
-						"acao" => busca_acao(codigo.to_string(), html),
-						"fundo" => busca_fundo(codigo.to_string(), html),
+						"acoes" => busca_acao(codigo.to_string(), html),
+						"fundos" => busca_fundo(codigo.to_string(), html),
 						_ => eprintln!("Tipo inválido: {}", tipo),
 					},
 					Err(e) => eprintln!("Erro ao obter HTML para {}: {}", codigo, e),
@@ -149,10 +149,11 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 			Ok(_) => println!("Arquivo de cotações atualizado com sucesso."),
 			Err(e) => eprintln!("Erro ao salvar CSV: {}", e),
 		},
-		Commands::Indicadores { yaml, saida, tipo } => match carregar_ativos_yaml(&yaml) {
-			Ok(ativos) => exportar_csv(&tipo, &ativos, saida)?,
-			Err(e) => eprintln!("Erro ao carregar ativos do YAML: {}", e),
-		},
+		Commands::Indicadores {
+			tickers,
+			saida,
+			tipo,
+		} => exportar_csv(&tipo, &tickers, saida)?,
 	}
 	Ok(())
 }

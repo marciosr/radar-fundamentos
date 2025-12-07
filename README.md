@@ -75,18 +75,18 @@ A saída será impressa no terminal em formato JSON.
 Exemplo:
 
 ```bash
-./radar-fundamentos export acao klbn11 rani3 --saida acoes.csv
-./radar-fundamentos export fundo snlg11 cvbi11
+./radar-fundamentos export acoes klbn11 rani3 --saida acoes.csv
+./radar-fundamentos export fundos snlg11 cvbi11
 ```
 
 Se a *flag* `--saida` for omitida, o arquivo de saída padrão será `resultado.csv`.
 
 -----
 
-### 📊 Exportação de Indicadores Fundamentalistas via YAML
+### 📊 Exportação de Indicadores Fundamentalistas
 
 ```bash
-./radar-fundamentos indicadores <tipo> --yaml arquivo.yaml [--saida arquivo.csv]
+./radar-fundamentos indicadores <tipo> [lista de ativos] [--saida arquivo.csv]
 ```
 
 **Descrição:** Este subcomando permite exportar **indicadores completos** para múltiplos ativos listados em um arquivo YAML, organizando os dados em formato CSV para análise offline.
@@ -94,18 +94,9 @@ Se a *flag* `--saida` for omitida, o arquivo de saída padrão será `resultado.
 #### Exemplo de uso:
 
 ```bash
-./radar-fundamentos indicadores fundo --yaml fundos.yaml --saida fundos.csv
+./radar-fundamentos indicadores fundos --saida fundos.csv
 ```
 
-#### Exemplo de `fundos.yaml`:
-
-```yaml
-ativos:
-  - RELG11
-  - SNEL11
-  - RZTR11
-  - GGRC11
-```
 
 O CSV gerado conterá diversas colunas de indicadores obtidos do site Fundamentus.
 

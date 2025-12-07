@@ -107,8 +107,8 @@ pub fn menu() {
 
 #[derive(Debug, Serialize)]
 pub enum Resultado {
-	Acao(Acao),
-	Fundo(Fundo),
+	Acoes(Acao),
+	Fundos(Fundo),
 }
 
 pub fn exportar_csv(tipo: &str, codigos: &[String], saida: Option<PathBuf>) -> Result<()> {
@@ -117,19 +117,19 @@ pub fn exportar_csv(tipo: &str, codigos: &[String], saida: Option<PathBuf>) -> R
 	for codigo in codigos {
 		match obter_html(codigo) {
 			Ok(html) => match tipo {
-				"acao" => {
+				"acoes" => {
 					let mut scraper = Acao::default();
 					scraper.ativo.ticker = codigo.clone();
 
 					let resultado = scraper.extrair_dados(&html);
-					resultados.push(Resultado::Acao(resultado));
+					resultados.push(Resultado::Acoes(resultado));
 				}
-				"fundo" => {
+				"fundos" => {
 					let mut scraper = Fundo::default();
 					scraper.ativo.ticker = codigo.clone();
 
 					let resultado = scraper.extrair_dados(&html);
-					resultados.push(Resultado::Fundo(resultado));
+					resultados.push(Resultado::Fundos(resultado));
 				}
 				_ => {
 					eprintln!("Outros tipos de ativos não implementados'{}'", tipo);
@@ -144,7 +144,7 @@ pub fn exportar_csv(tipo: &str, codigos: &[String], saida: Option<PathBuf>) -> R
 	}
 
 	match tipo {
-		"acao" => {
+		"acoes" => {
 			export_csv_atomico(
 				&saida.unwrap(),
 				resultados,
@@ -170,7 +170,7 @@ pub fn exportar_csv(tipo: &str, codigos: &[String], saida: Option<PathBuf>) -> R
 				},
 			)?;
 		}
-		"fundo" => {
+		"fundos" => {
 			export_csv_atomico(
 				&saida.unwrap(),
 				resultados,
