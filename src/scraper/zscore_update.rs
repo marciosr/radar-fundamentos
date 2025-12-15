@@ -35,7 +35,7 @@ pub fn executar_zscore_update(
 		calcular_zscore_acumulado_com_quotes(&quotes_a, &quotes_b)?;
 
 	if let Some(arquivo) = caminho_saida {
-		salvar_zscore_completo(&resultado, arquivo)?;
+		salvar_zscore_completo(&resultado, arquivo, atv_a, atv_b)?;
 		println!("[ZscoreUpdate] Resultado salvo em {arquivo}");
 	} else {
 		if let Some(ultimo) = resultado.last() {

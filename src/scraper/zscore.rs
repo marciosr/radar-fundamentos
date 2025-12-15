@@ -17,7 +17,7 @@ pub fn busca_zscore(
 	let resultado = calcular_zscore_acumulado_com_quotes(&quotes1, &quotes2)?;
 
 	if let Some(caminho) = saida {
-		salvar_zscore_completo(&resultado, caminho)?;
+		salvar_zscore_completo(&resultado, caminho, ativo_a, ativo_b)?;
 		println!("Z-score exportado para: {}", caminho);
 	} else {
 		for linha in &resultado {
@@ -95,9 +95,15 @@ pub fn calcular_zscore_acumulado_com_quotes(
 pub fn salvar_zscore_completo(
 	dados: &[ZscoreRegistro],
 	caminho: &str,
+	ativo_a: &str,
+	ativo_b: &str,
 ) -> Result<(), Box<dyn Error>> {
 	let mut arquivo = File::create(caminho)?;
-	writeln!(arquivo, "data,preco_a,preco_b,spread,media,desvio,zscore")?;
+	writeln!(
+		arquivo,
+		"data,{},{},spread,media,desvio,zscore",
+		ativo_a, ativo_b
+	)?;
 	for r in dados {
 		writeln!(
 			arquivo,
