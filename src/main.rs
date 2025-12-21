@@ -1,5 +1,5 @@
 use clap::{Parser, Subcommand, ValueHint};
-use std::path::PathBuf;
+use std::{path::PathBuf, process::Command};
 
 use radar_fundamentos::scraper::{
 	atualizar_cotacoes_csv, compare::comparar_holdings, zscore, zscore_update,
@@ -40,6 +40,14 @@ enum Commands {
 		saida: Option<PathBuf>,
 	},
 
+	/// Compara valor de mercado de uma holding com sua investida
+	CompareHolding {
+		ativo_holding: String,
+		ativo_investida: String,
+		#[arg(short, long)]
+		participacao: f64,
+	},
+
 	/// Calcula o Z-score acumulado entre dois ativos com dados do Yahoo Finance
 	ZScore {
 		ativo_a: String,
@@ -52,21 +60,18 @@ enum Commands {
 		saida: Option<String>,
 	},
 
-	/// Compara valor de mercado de uma holding com sua investida
-	CompareHolding {
-		ativo_holding: String,
-		ativo_investida: String,
-		#[arg(short, long)]
-		participacao: f64,
-	},
-
 	/// Atualiza cotações locais e calcula o Z-score acumulado entre dois ativos
 	ZScoreUpdate {
 		ativo_a: String,
 		ativo_b: String,
+		/// Data de início no formato YYYY-MM-DD
+		#[clap(long)]
+		inicio: Option<String>,
 		/// Caminho do arquivo CSV de saída
 		#[clap(long)]
 		saida: Option<String>,
+		#[clap(long)]
+		plot: bool,
 	},
 
 	/// Atualiza o CSV com as últimas cotações a partir de uma lista de ativos
@@ -137,13 +142,40 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 		Commands::ZScoreUpdate {
 			ativo_a,
 			ativo_b,
+			inicio,
 			saida,
+			plot,
 		} => {
-			if let Err(e) =
-				zscore_update::executar_zscore_update(&ativo_a, &ativo_b, saida.as_deref())
-			{
-				eprintln!("Erro no ZScoreUpdate: {e}");
+			//if let Err(e) = {
+			match zscore_update::executar_zscore_update(
+				&ativo_a,
+				&ativo_b,
+				inicio,
+				saida.as_deref(),
+			) {
+				Ok(()) => {
+					if plot {
+						let mut cmd = Command::new("radar-plotter");
+						cmd.arg("zscore");
+						cmd.arg("--arquivo");
+						cmd.arg(saida.unwrap_or_else(|| String::from("zscore.html")));
+
+						println!("[plotter] [zscore] Comando completo: {:?}", cmd);
+						match cmd.status() {
+							Ok(status) => {
+								println!("[plotter] [zscore] Finalizado com: {}", status)
+							}
+							Err(e) => eprintln!("[runner] [zscore] Erro ao executar: {}", e),
+						}
+					}
+				}
+				Err(e) => {
+					eprintln!("Erro no ZScoreUpdate: {e}");
+				}
 			}
+			//} {
+			//	eprintln!("Erro no ZScoreUpdate: {e}");
+			//}
 		}
 		Commands::Cotacoes { tickers, saida } => match atualizar_cotacoes_csv(&tickers, &saida) {
 			Ok(_) => println!("Arquivo de cotações atualizado com sucesso."),

@@ -1,6 +1,6 @@
 [package]
 name = "radar-fundamentos"
-version = "0.4.0"
+version = "0.5.0"
 edition = "2024"
 license = "MIT"
 authors = ["Márcio <marciosr10 at gmail.com>"]
@@ -20,7 +20,7 @@ time = "0.3"
 tokio-test = "0.4"
 chrono = { version = "0.4", features = ["serde"] }
 serde_yml = "0.0.12"
-scraper = "0.24"
+scraper = "0.25"
 anyhow = "1.0"
 tempfile = "3"
 

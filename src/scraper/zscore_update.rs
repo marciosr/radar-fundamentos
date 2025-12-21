@@ -24,12 +24,15 @@ struct RegistroCotacao {
 pub fn executar_zscore_update(
 	atv_a: &str,
 	atv_b: &str,
+	inicio: Option<std::string::String>,
 	caminho_saida: Option<&str>,
 ) -> Result<(), Box<dyn std::error::Error>> {
 	fs::create_dir_all(DIR_COTACOES)?;
 
-	let quotes_a = atualizar_e_carregar_quotes(atv_a)?;
-	let quotes_b = atualizar_e_carregar_quotes(atv_b)?;
+	let data_inicial = inicio.unwrap_or_else(|| String::from(DATA_MINIMA_PADRAO));
+
+	let quotes_a = atualizar_e_carregar_quotes(atv_a, data_inicial.as_str())?;
+	let quotes_b = atualizar_e_carregar_quotes(atv_b, data_inicial.as_str())?;
 
 	let resultado: Vec<ZscoreRegistro> =
 		calcular_zscore_acumulado_com_quotes(&quotes_a, &quotes_b)?;
@@ -49,7 +52,10 @@ pub fn executar_zscore_update(
 	Ok(())
 }
 
-fn atualizar_e_carregar_quotes(ticker: &str) -> Result<Vec<Quote>, Box<dyn std::error::Error>> {
+fn atualizar_e_carregar_quotes(
+	ticker: &str,
+	inicio: &str,
+) -> Result<Vec<Quote>, Box<dyn std::error::Error>> {
 	let caminho = format!("{DIR_COTACOES}{ticker}.csv");
 
 	let mut historico: Vec<RegistroCotacao> = if Path::new(&caminho).exists() {
@@ -64,7 +70,8 @@ fn atualizar_e_carregar_quotes(ticker: &str) -> Result<Vec<Quote>, Box<dyn std::
 	let data_str: Option<String> = Some(
 		nova_data_inicio
 			.map(|d| d.to_string())
-			.unwrap_or_else(|| DATA_MINIMA_PADRAO.to_string()),
+			.unwrap_or_else(|| String::from(inicio))
+			.to_string(),
 	);
 
 	let novos_dados = obter_cotacoes_yahoo(ticker, data_str.as_deref())?;
