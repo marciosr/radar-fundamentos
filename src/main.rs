@@ -1,11 +1,11 @@
 use clap::{Parser, Subcommand, ValueHint};
-use std::{path::PathBuf, process::Command};
-
+// use dirs;
 use radar_fundamentos::scraper::{
-	atualizar_cotacoes_csv, compare::comparar_holdings, zscore, zscore_update,
+	atualizar_cotacoes_csv, compare::comparar_holdings, zscore_update,
 };
 use radar_fundamentos::scraper::{busca_acao, busca_fundo};
 use radar_fundamentos::util::{exportar_csv, obter_html};
+use std::{path::PathBuf, process::Command};
 
 /// Radar Fundamentus: coleta e exporta múltiplos fundamentalistas
 #[derive(Parser)]
@@ -48,20 +48,8 @@ enum Commands {
 		participacao: f64,
 	},
 
-	/// Calcula o Z-score acumulado entre dois ativos com dados do Yahoo Finance
-	ZScore {
-		ativo_a: String,
-		ativo_b: String,
-		/// Data de início no formato YYYY-MM-DD
-		#[clap(long)]
-		inicio: Option<String>,
-		/// Caminho do arquivo CSV de saída
-		#[clap(long)]
-		saida: Option<String>,
-	},
-
 	/// Atualiza cotações locais e calcula o Z-score acumulado entre dois ativos
-	ZScoreUpdate {
+	Zscore {
 		ativo_a: String,
 		ativo_b: String,
 		/// Data de início no formato YYYY-MM-DD
@@ -120,45 +108,49 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 		} => {
 			exportar_csv(&tipo, &tickers, saida)?;
 		}
-		Commands::ZScore {
-			ativo_a,
-			ativo_b,
-			inicio,
-			saida,
-		} => {
-			if let Err(e) =
-				zscore::busca_zscore(&ativo_a, &ativo_b, inicio.as_deref(), saida.as_deref())
-			{
-				eprintln!("Erro ao calcular Z-score: {e}");
-			}
-		}
-		Commands::CompareHolding {
-			ativo_holding,
-			ativo_investida,
-			participacao,
-		} => {
-			let _ = comparar_holdings(&ativo_holding, &ativo_investida, participacao);
-		}
-		Commands::ZScoreUpdate {
+
+		Commands::Zscore {
 			ativo_a,
 			ativo_b,
 			inicio,
 			saida,
 			plot,
 		} => {
-			//if let Err(e) = {
+			// let mut ativos = vec![ativo_a.to_lowercase(), ativo_b.to_ascii_lowercase()];
+			// ativos.sort();
+			// let nome_csv = format!("zscore_{}_{}.csv", ativos[0], ativos[1]);
+			// let nome_html = format!("zscore_{}_{}.csv", ativos[0], ativos[1]);
+
+			// Dentro da função que processa o comando Zscore
+
+			// 1. Pegamos os nomes e colocamos em ordem alfabética para ser agnóstico e consistente [cite: 2025-12-21]
+			let mut ativos = vec![ativo_a.to_lowercase(), ativo_b.to_lowercase()];
+			ativos.sort();
+
+			// 2. Criamos o nome padrão baseado nos ativos (ex: zscore_bbse3_pssa3)
+			let nome_padrao = format!("zscore_{}_{}", ativos[0], ativos[1]);
+
+			// 3. Resolvemos o caminho do CSV usando o match no Option 'saida'
+			let csv_final = match saida {
+				Some(caminho) => caminho, // Se o usuário digitou --saida, usamos o que ele quer
+				None => format!("{}.csv", nome_padrao), // Se não digitou, usamos o padrão automático
+			};
+
+			// 4. O HTML do gráfico segue a mesma lógica do nome padrão
+			//let html_final = format!("{}.html", nome_padrao);
+
 			match zscore_update::executar_zscore_update(
 				&ativo_a,
 				&ativo_b,
 				inicio,
-				saida.as_deref(),
+				Some(csv_final.as_str()),
 			) {
 				Ok(()) => {
 					if plot {
 						let mut cmd = Command::new("radar-plotter");
 						cmd.arg("zscore");
 						cmd.arg("--arquivo");
-						cmd.arg(saida.unwrap_or_else(|| String::from("zscore.html")));
+						cmd.arg(csv_final);
 
 						println!("[plotter] [zscore] Comando completo: {:?}", cmd);
 						match cmd.status() {
@@ -170,12 +162,16 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 					}
 				}
 				Err(e) => {
-					eprintln!("Erro no ZScoreUpdate: {e}");
+					eprintln!("Erro na geração do zscore: {e}");
 				}
 			}
-			//} {
-			//	eprintln!("Erro no ZScoreUpdate: {e}");
-			//}
+		}
+		Commands::CompareHolding {
+			ativo_holding,
+			ativo_investida,
+			participacao,
+		} => {
+			let _ = comparar_holdings(&ativo_holding, &ativo_investida, participacao);
 		}
 		Commands::Cotacoes { tickers, saida } => match atualizar_cotacoes_csv(&tickers, &saida) {
 			Ok(_) => println!("Arquivo de cotações atualizado com sucesso."),
