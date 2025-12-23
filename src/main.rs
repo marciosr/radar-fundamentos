@@ -11,7 +11,7 @@ use std::{path::PathBuf, process::Command};
 #[derive(Parser)]
 #[clap(
 	name = "radar-fundamentos",
-	version = "0.1.0",
+	version = "0.5.0",
 	author = "Márcio <marciosr10 at gmail.com>"
 )]
 struct Cli {
@@ -116,28 +116,15 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 			saida,
 			plot,
 		} => {
-			// let mut ativos = vec![ativo_a.to_lowercase(), ativo_b.to_ascii_lowercase()];
-			// ativos.sort();
-			// let nome_csv = format!("zscore_{}_{}.csv", ativos[0], ativos[1]);
-			// let nome_html = format!("zscore_{}_{}.csv", ativos[0], ativos[1]);
-
-			// Dentro da função que processa o comando Zscore
-
-			// 1. Pegamos os nomes e colocamos em ordem alfabética para ser agnóstico e consistente [cite: 2025-12-21]
 			let mut ativos = vec![ativo_a.to_lowercase(), ativo_b.to_lowercase()];
 			ativos.sort();
 
-			// 2. Criamos o nome padrão baseado nos ativos (ex: zscore_bbse3_pssa3)
 			let nome_padrao = format!("zscore_{}_{}", ativos[0], ativos[1]);
 
-			// 3. Resolvemos o caminho do CSV usando o match no Option 'saida'
 			let csv_final = match saida {
-				Some(caminho) => caminho, // Se o usuário digitou --saida, usamos o que ele quer
-				None => format!("{}.csv", nome_padrao), // Se não digitou, usamos o padrão automático
+				Some(caminho) => caminho,
+				None => format!("{}.csv", nome_padrao),
 			};
-
-			// 4. O HTML do gráfico segue a mesma lógica do nome padrão
-			//let html_final = format!("{}.html", nome_padrao);
 
 			match zscore_update::executar_zscore_update(
 				&ativo_a,
