@@ -1,6 +1,8 @@
 use reqwest::blocking::Client;
+use reqwest::header::{ACCEPT, ACCEPT_LANGUAGE, HeaderMap, HeaderValue, UPGRADE_INSECURE_REQUESTS};
 use scraper::{Html, Selector};
 use std::error::Error;
+use std::time::Duration;
 
 pub fn parse_num(s: &str) -> f64 {
 	s.replace('.', "")
@@ -17,11 +19,23 @@ pub fn obter_html(codigo: &str) -> Result<String, Box<dyn Error>> {
 		codigo.to_uppercase()
 	);
 
+	let mut headers = HeaderMap::new();
+	headers.insert(
+		ACCEPT,
+		HeaderValue::from_static(
+			"text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8",
+		),
+	);
+	headers.insert(
+		ACCEPT_LANGUAGE,
+		HeaderValue::from_static("pt-BR,pt;q=0.9,en-US;q=0.8,en;q=0.7"),
+	);
+	headers.insert(UPGRADE_INSECURE_REQUESTS, HeaderValue::from_static("1"));
+
 	let client = Client::builder()
-		.user_agent(
-			"Mozilla/5.0 (X11; Linux x86_64; rv:139.0) Gecko/20100101 Firefox/139.0; RadarFundamentos/0.1",
-		)
-		//.user_agent("Mozilla/5.0 (compatible; RadarFundamentos/0.1; +https://github.com/marciosr/radar-fundamentos)")
+		.timeout(Duration::from_secs(15))
+		.user_agent("Mozilla/5.0 (X11; Linux x86_64; rv:139.0) Gecko/20100101 Firefox/139.0")
+		.default_headers(headers)
 		.build()?;
 
 	let resposta = client.get(&url).send()?.error_for_status()?;
