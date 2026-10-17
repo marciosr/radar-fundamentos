@@ -26,7 +26,6 @@ Este software é fornecido "no estado em que se encontra", sem garantias de qual
 
 ```bash
 cargo build --release
-
 ```
 
 O executável será gerado em `target/release/radar-fundamentos`.
@@ -40,7 +39,6 @@ version = "0.10"
 [target.'cfg(target_arch = "arm")'.dependencies.openssl]
 version = "0.10"
 features = ["vendored"]
-
 ```
 
 ---
@@ -51,7 +49,6 @@ features = ["vendored"]
 
 ```bash
 ./radar-fundamentos batch <tipo> <TICKER1> <TICKER2> ...
-
 ```
 
 **Descrição:** Processa uma lista de *tickers* e imprime o resultado da análise fundamentalista (Ação ou Fundo) no formato JSON na saída padrão (terminal).
@@ -61,7 +58,6 @@ Exemplo:
 ```bash
 ./radar-fundamentos batch acao petr4 vale3
 ./radar-fundamentos batch fundo ggrc11 relg11
-
 ```
 
 ---
@@ -70,7 +66,6 @@ Exemplo:
 
 ```bash
 ./radar-fundamentos export <tipo> <TICKER1> <TICKER2> ... [--saida <caminho.csv>]
-
 ```
 
 **Descrição:** Coleta os indicadores fundamentalistas para os *tickers* fornecidos e exporta os dados para um arquivo CSV. Se a *flag* `--saida` for omitida, o arquivo de saída padrão será `resultado.csv`.
@@ -81,7 +76,6 @@ Exemplo:
 
 ```bash
 ./radar-fundamentos indicadores <tipo> [lista de ativos] [--saida arquivo.csv]
-
 ```
 
 **Descrição:** Exporta indicadores completos para múltiplos ativos listados em um arquivo YAML externo. Ideal para relatórios periódicos de acompanhamento de carteiras.
@@ -92,7 +86,6 @@ Exemplo:
 
 ```bash
 ./radar-fundamentos cotacoes <TICKER1> <TICKER2> ... --saida <caminho.csv>
-
 ```
 
 **Descrição:** Coleta as últimas cotações (via Yahoo Finance) para os *tickers* fornecidos e atualiza um único arquivo CSV.
@@ -105,7 +98,6 @@ Exemplo:
 
 ```bash
 ./radar-fundamentos zscore <ATIVO_A> <ATIVO_B> [--inicio YYYY-MM-DD] [--saida caminho.csv] [--plot]
-
 ```
 
 **Descrição:** Comando consolidado que funciona com qualquer par de ativos [cite: 2025-12-21]. Ele realiza:
@@ -120,7 +112,6 @@ Exemplo:
 
 ```bash
 ./radar-fundamentos zscore bbse3 pssa3 --inicio 2020-01-01 --plot
-
 ```
 
 ---
@@ -129,7 +120,6 @@ Exemplo:
 
 ```bash
 ./radar-fundamentos compare-holding <HOLDING> <INVESTIDA> --participacao <PORCENTAGEM>
-
 ```
 
 **Descrição:** Compara o valor de mercado da holding com o valor de sua participação acionária na empresa investida.
